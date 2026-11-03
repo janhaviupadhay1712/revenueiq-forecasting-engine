@@ -15,8 +15,8 @@ from pydantic import BaseModel, Field
 
 from forecasting.analytics import decompose, detect_anomalies
 from forecasting.engine import ALL_MODELS, RevenueForecaster, generate_demo_data, prepare_series
-from forecasting.store import list_runs, log_run
 from forecasting.insights import narrative
+from forecasting.store import list_runs, log_run
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("revenueiq.api")
@@ -82,14 +82,20 @@ def _run(df: pd.DataFrame, req: ForecastRequest) -> ForecastResponse:
         series = prepare_series(df)
         res = RevenueForecaster(horizon=req.horizon, confidence=req.confidence, models=req.models).run(series)
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
-    except Exception:
+        raise HTTPException(
+            status_code=422,
+            detail=str(exc)
+        ) from exc
+    except Exception as exc:
         log.exception("Forecast failed")
-        raise HTTPException(status_code=500, detail="Forecast failed")from exc
+        raise HTTPException(
+            status_code=500,
+            detail="Forecast failed"
+        ) from exc
 
     try:
         log_run(series, res)
-    except Exception:
+    except Exception :
         log.warning("run logging failed", exc_info=True)
     mult = 1 + req.scenario_pct / 100
     f = res.forecast[["forecast", "lower", "upper"]] * mult
@@ -98,7 +104,7 @@ def _run(df: pd.DataFrame, req: ForecastRequest) -> ForecastResponse:
     if req.include_insights:
         text, engine = narrative(res, req.scenario_pct)
     return ForecastResponse(
-        points=[ForecastPoint(month=i.date(), **r) for i, r in zip(f.index, f.to_dict("records"))],
+        points=[ForecastPoint(month=i.date(), **r) for i, r in zip(f.index, f.to_dict("records"),strict=True)],
         leaderboard=board,
         ensemble_mape_pct=None if pd.isna(res.ensemble_mape) else round(res.ensemble_mape, 3),
         total_forecast=float(f["forecast"].sum()),
@@ -132,7 +138,7 @@ def _series(req: SeriesRequest) -> pd.Series:
     try:
         return prepare_series(pd.DataFrame([r.model_dump() for r in req.data]))
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @app.get("/models", tags=["forecast"], dependencies=[Depends(require_key)])

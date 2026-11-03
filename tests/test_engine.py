@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+
 from forecasting.engine import RevenueForecaster, generate_demo_data, prepare_series
 
 

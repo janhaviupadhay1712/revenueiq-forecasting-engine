@@ -1,8 +1,8 @@
-import pandas as pd
+import pytest
+
 from forecasting.analytics import clean_series, decompose, detect_anomalies, scenarios
 from forecasting.engine import ALL_MODELS, RevenueForecaster, generate_demo_data, prepare_series
 from forecasting.store import list_runs, log_run, realized_accuracy
-import pytest
 
 
 def _y():

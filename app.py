@@ -1,18 +1,16 @@
 """RevenueIQ — AI Revenue Forecasting Engine (Streamlit dashboard). Run: streamlit run app.py"""
 import io
+import os
 
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
-
 from plotly.subplots import make_subplots
 
 from forecasting.analytics import clean_series, decompose, detect_anomalies, scenarios
 from forecasting.engine import ALL_MODELS, RevenueForecaster, generate_demo_data, prepare_series
-from forecasting.store import list_runs, log_run, realized_accuracy
 from forecasting.insights import narrative
-
-import os
+from forecasting.store import list_runs, log_run, realized_accuracy
 
 st.set_page_config(page_title="RevenueIQ · AI Forecasting", page_icon="📈", layout="wide")
 if os.path.exists("docs/logo.svg"):
@@ -91,7 +89,7 @@ cards = [
     ("Peak Month", f['forecast'].idxmax().strftime("%b %Y"), inr(f['forecast'].max()), True),
     ("Backtest Accuracy", f"{acc:.1f}%", f"MAPE {res.ensemble_mape:.2f}%", acc > 90),
 ]
-for col, (l, v, d, good) in zip(k, cards):
+for col, (l, v, d, good) in zip(k, cards, strict=True):
     col.markdown(f'<div class="kpi"><div class="l">{l}</div><div class="v">{v}</div>'
                  f'<div class="d {"up" if good else "down"}">{d}</div></div>', unsafe_allow_html=True)
 st.write("")
@@ -139,7 +137,8 @@ with tab3:
 with tab4:
     out = f.round(0).rename_axis("month").reset_index()
     st.dataframe(out, use_container_width=True, hide_index=True)
-    buf = io.StringIO(); out.to_csv(buf, index=False)
+    buf = io.StringIO()
+    out.to_csv(buf, index=False)
     st.download_button("⬇️ Download forecast CSV", buf.getvalue(), "revenue_forecast.csv", "text/csv")
 
     xb = io.BytesIO()
@@ -159,8 +158,23 @@ with tab5:
     c2.metric("Seasonal strength", f"{dec.attrs['seasonal_strength']:.2f}")
     c3.metric("Anomalies found", int(anomalies["is_anomaly"].sum()))
     d5 = make_subplots(rows=3, cols=1, shared_xaxes=True, subplot_titles=("Trend", "Seasonality", "Residual"))
-    for i, (c, col) in enumerate(zip(["trend", "seasonal", "resid"], ["#38BDF8", "#A78BFA", "#F87171"]), 1):
-        d5.add_trace(go.Scatter(x=dec.index, y=dec[c], line=dict(color=col), showlegend=False), row=i, col=1)
+    for i, (c, col) in enumerate(
+            zip(
+                ["trend", "seasonal", "resid"],
+                ["#38BDF8", "#A78BFA", "#F87171"],
+                strict=True
+            ),
+            1
+    ):
+        d5.add_trace(
+            go.Scatter(
+                x=dec.index,
+                y=dec[c],
+                line=dict(color=col),
+                showlegend=False),
+            row=i,
+            col=1
+        )
     d5.update_layout(height=520, **DARK)
     st.plotly_chart(d5, use_container_width=True)
     hits = anomalies[anomalies["is_anomaly"]]
@@ -181,8 +195,10 @@ with tab6:
         gap = total - target
         st.metric("Gap to target (base)", inr(gap), delta="ahead" if gap >= 0 else "shortfall",
                   delta_color="normal" if gap >= 0 else "inverse")
-        st.caption(f"Probability-style view: target is {'within' if sc.Total[0] <= target <= sc.Total[2] else 'outside'} "
-                   "the bear–bull range.")
+        st.caption(f"Probability-style view: target is"
+                   f"{'within' if sc.Total[0] <= target <= sc.Total[2] else 'outside'} "
+                   "the bear–bull range."
+                   )
     else:
         st.info("Set a revenue target in the sidebar to track the gap.")
 
@@ -192,6 +208,8 @@ with tab7:
     st.subheader("Realized accuracy of past forecasts")
     acc_df = realized_accuracy(series)
     if acc_df.empty:
-        st.info("No stored forecast overlaps your data yet. Re-upload the file with newer months to score past forecasts.")
+        st.info("No stored forecast overlaps your data yet. "
+                "Re-upload the file with newer months to score past forecasts."
+                )
     else:
         st.dataframe(acc_df.round(2), use_container_width=True, hide_index=True)
