@@ -224,7 +224,7 @@ Covers pipeline shape/ordering of intervals, accuracy sanity check, weight norma
 
 ## 👤 Author
 
-**Your Name** · [LinkedIn](https://linkedin.com/in/your-profile) · [GitHub](https://github.com/your-username)
+**Janhavi Upadhyay** · [LinkedIn]([https://www.linkedin.com/in/janhavi-upadhyay-7115a8321/]) 
 
 <div align="center">⭐ If you found this useful, star the repo!</div>
 
