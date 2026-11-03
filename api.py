@@ -82,10 +82,10 @@ def _run(df: pd.DataFrame, req: ForecastRequest) -> ForecastResponse:
         series = prepare_series(df)
         res = RevenueForecaster(horizon=req.horizon, confidence=req.confidence, models=req.models).run(series)
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     except Exception:
         log.exception("Forecast failed")
-        raise HTTPException(status_code=500, detail="Forecast failed")
+        raise HTTPException(status_code=500, detail="Forecast failed")from exc
 
     try:
         log_run(series, res)
